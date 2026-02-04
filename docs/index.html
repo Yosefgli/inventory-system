@@ -62,6 +62,20 @@
     <strong>מלאי:</strong>
     <span id="stock"></span>
   </p>
+
+  <label>כמות</label>
+  <input id="qty" type="number" min="0.001" step="0.001" value="1" />
+
+
+  <label>מפתח מערכת (API Key)</label>
+  <input id="apiKey" type="password" placeholder="הכנס מפתח (רק לעובדים מורשים)" />
+
+
+  <button onclick="transfer('WAREHOUSE','PICKING')">העבר ממחסן → ליקוט</button>
+  <button onclick="transfer('WAREHOUSE','STORE')">העבר ממחסן → חנות</button>
+
+
+  <div id="actionResult" class="muted" style="margin-top:10px;"></div>
 </div>
 
 <script>
@@ -103,6 +117,63 @@ async function loadProduct() {
 
   document.getElementById('stock').innerText =
     data.stock.map(s => `${s.location_name_he}: ${s.qty}`).join(' | ');
+}
+
+async function transfer(fromCode, toCode) {
+  document.getElementById('error').innerText = '';
+  document.getElementById('actionResult').innerText = '';
+
+
+  const barcode = document.getElementById('barcode').value.trim();
+  const qty = Number(document.getElementById('qty').value);
+  const apiKey = document.getElementById('apiKey').value.trim();
+
+
+  if (!barcode) return;
+  if (!apiKey) {
+    document.getElementById('error').innerText = 'חסר מפתח מערכת';
+    return;
+  }
+  if (!qty || qty <= 0) {
+    document.getElementById('error').innerText = 'כמות לא תקינה';
+    return;
+  }
+
+
+  const res = await fetch(`${PROJECT_URL}/rest/v1/rpc/stock_transfer_by_barcode_secure`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': ANON_KEY,
+      'Authorization': 'Bearer ' + ANON_KEY
+    },
+    body: JSON.stringify({
+      p_api_key: apiKey,
+      p_barcode: barcode,
+      p_from_location_code: fromCode,
+      p_to_location_code: toCode,
+      p_qty: qty,
+      p_note_he: 'העברה מהמסך',
+      p_allow_negative: false,
+      p_source: 'ui'
+    })
+  });
+
+
+  if (!res.ok) {
+    const txt = await res.text();
+    document.getElementById('error').innerText = 'הפעולה נכשלה: ' + txt;
+    return;
+  }
+
+
+  const data = await res.json();
+  document.getElementById('actionResult').innerText =
+    `בוצע! ${fromCode} → ${toCode}, כמות ${qty}.`;
+
+
+  // Refresh product snapshot so stock updates on screen
+  await loadProduct();
 }
 </script>
 

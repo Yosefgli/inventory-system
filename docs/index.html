@@ -67,9 +67,11 @@
   <input id="qty" type="number" min="0.001" step="0.001" value="1" />
 
 
-  <label>מפתח מערכת (חד פעמי)</label>
-  <input id="apiKey" type="password" placeholder="הכנס פעם אחת" />
-  <button onclick="saveApiKey()">שמור מפתח</button>
+  <div id="apiKeySection">
+    <label>מפתח מערכת (חד פעמי)</label>
+    <input id="apiKey" type="password" placeholder="הכנס פעם אחת" />
+    <button onclick="saveApiKey()">שמור מפתח</button>
+  </div>
 
 
   <button onclick="transfer('WAREHOUSE','PICKING')">העבר ממחסן → ליקוט</button>
@@ -128,11 +130,18 @@ function saveApiKey() {
   }
   localStorage.setItem('inv_api_key', key);
   alert('המפתח נשמר במכשיר');
+  updateApiKeyVisibility();
 }
 
 
 function getApiKey() {
   return localStorage.getItem('inv_api_key') || '';
+}
+
+function updateApiKeyVisibility() {
+  const apiKeySection = document.getElementById('apiKeySection');
+  if (!apiKeySection) return;
+  apiKeySection.style.display = getApiKey() ? 'none' : 'block';
 }
 
 async function transfer(fromCode, toCode) {
@@ -197,6 +206,8 @@ async function transfer(fromCode, toCode) {
     btns.forEach(b => b.disabled = false);
   }
 }
+
+updateApiKeyVisibility();
 </script>
 
 </body>

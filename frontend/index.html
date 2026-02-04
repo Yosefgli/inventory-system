@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>סריקת מלאי</title>
+  <style>
+    body {
+      font-family: system-ui, Arial;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 16px;
+    }
+    h1 { text-align: center; }
+    .card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    label { display: block; margin-top: 8px; }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      font-size: 16px;
+    }
+    button {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      margin-top: 12px;
+    }
+    .muted { color: #666; font-size: 14px; }
+    .error { color: #c00; }
+  </style>
+</head>
+<body>
+
+<h1>סריקת מלאי</h1>
+
+<div class="card">
+  <label>ברקוד מוצר</label>
+  <input id="barcode" placeholder="סרוק או הקלד ברקוד" />
+
+  <button onclick="loadProduct()">טען מוצר</button>
+  <div id="error" class="error"></div>
+</div>
+
+<div id="product" class="card" style="display:none;">
+  <h3 id="name"></h3>
+  <div class="muted">SKU: <span id="sku"></span></div>
+
+  <p>
+    <strong>מיקום במחסן:</strong>
+    <span id="location"></span>
+  </p>
+
+  <p>
+    <strong>מלאי:</strong>
+    <span id="stock"></span>
+  </p>
+</div>
+
+<script>
+const PROJECT_URL = "https://flebwvluqixxuhrcmuxe.supabase.co";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZWJ3dmx1cWl4eHVocmNtdXhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxOTQ4NDUsImV4cCI6MjA4NTc3MDg0NX0.OS3vKX3Fq4G7raALFCrawyQ9l7YsuWRSGLFO0lULvuA";
+
+async function loadProduct() {
+  document.getElementById('error').innerText = '';
+  const barcode = document.getElementById('barcode').value.trim();
+  if (!barcode) return;
+
+  const res = await fetch(`${PROJECT_URL}/rest/v1/rpc/get_product_snapshot_by_barcode`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': ANON_KEY,
+      'Authorization': 'Bearer ' + ANON_KEY
+    },
+    body: JSON.stringify({ p_barcode: barcode })
+  });
+
+  if (!res.ok) {
+    document.getElementById('error').innerText = 'לא נמצא מוצר לברקוד זה';
+    return;
+  }
+
+  const data = await res.json();
+
+  document.getElementById('product').style.display = 'block';
+  document.getElementById('name').innerText = data.product.name_he;
+  document.getElementById('sku').innerText = data.product.sku;
+
+  if (data.warehouse_location) {
+    document.getElementById('location').innerText =
+      `אזור ${data.warehouse_location.zone}, מדף ${data.warehouse_location.shelf}, תא ${data.warehouse_location.bin}`;
+  } else {
+    document.getElementById('location').innerText = 'לא הוגדר';
+  }
+
+  document.getElementById('stock').innerText =
+    data.stock.map(s => `${s.location_name_he}: ${s.qty}`).join(' | ');
+}
+</script>
+
+</body>
+</html>
